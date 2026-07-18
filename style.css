@@ -1,0 +1,618 @@
+/* ============================================================
+   Maze Pathfinder — stylesheet
+   Palette: dark neutral background, light walls, teal/violet
+   search waves, amber shortest path, green/red endpoints.
+   ============================================================ */
+
+:root {
+  color-scheme: dark;
+
+  /* Surfaces & text */
+  --bg: #0e1117;
+  --panel: #161b24;
+  --panel-border: #262e3d;
+  --text: #e8ebf4;
+  --text-muted: #8b93a7;
+
+  /* Board */
+  --cell: 24px;            /* overwritten by script.js on resize */
+  --cell-empty: #1b212d;
+  --cell-gap: #10141c;
+  --wall: #ccd3e2;
+
+  /* Actors */
+  --start: #2fd377;        /* A — green  */
+  --end: #ff5d5d;          /* B — red    */
+
+  /* Search waves */
+  --wave-a: #1d5f70;       /* settled tint, A side (teal)   */
+  --wave-a-bright: #3fd2e8;
+  --wave-b: #533070;       /* settled tint, B side (violet) */
+  --wave-b-bright: #c084fc;
+
+  /* Result */
+  --path: #ffc53d;         /* amber */
+  --meet: #ffffff;
+
+  --accent: #4f8cff;
+  --radius: 12px;
+  --shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* The hidden attribute must always win, even over display: flex rules */
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Header ---------- */
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1.1rem 1.5rem 0.4rem;
+  max-width: 1060px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.site-header h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.tagline {
+  margin: 0.2rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  max-width: 46rem;
+}
+
+/* ---------- Layout ---------- */
+
+.app {
+  flex: 1;
+  width: 100%;
+  max-width: 1060px;
+  margin: 0 auto;
+  padding: 0.6rem 1.5rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  appearance: none;
+  border: 1px solid var(--panel-border);
+  background: #1d2430;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  padding: 0.42rem 0.75rem;
+  border-radius: 9px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    transform 80ms ease,
+    opacity 120ms ease;
+}
+
+.btn:hover:not(:disabled) {
+  background: #242c3b;
+  border-color: #35405a;
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #3f7df4;
+  border-color: #3f7df4;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.btn-ghost:hover {
+  background: #1d2430;
+  color: var(--text);
+}
+
+/* Pressed state for mode / speed toggles */
+.mode-btn[aria-pressed="true"],
+.speed-btn[aria-pressed="true"] {
+  background: #2a3550;
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+/* ---------- Toolbar ---------- */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.55rem 1.1rem;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.85rem;
+  box-shadow: var(--shadow);
+}
+
+.tool-group {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.tool-group + .tool-group {
+  padding-left: 1.1rem;
+  border-left: 1px solid var(--panel-border);
+}
+
+.speed-label,
+.group-label {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Algorithm dropdown, styled to match the buttons */
+.algo-select {
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238b93a7' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")
+      no-repeat right 0.6rem center,
+    #1d2430;
+  border: 1px solid var(--panel-border);
+  border-radius: 9px;
+  padding: 0.42rem 1.7rem 0.42rem 0.75rem;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.algo-select:hover:not(:disabled) {
+  border-color: #35405a;
+}
+
+.algo-select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.algo-select:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.algo-select option:disabled {
+  color: #5b6273;
+}
+
+.speed-btn {
+  font-weight: 500;
+  padding: 0.34rem 0.6rem;
+}
+
+/* ---------- Status line ---------- */
+
+.status {
+  margin: 0;
+  min-height: 1.3em;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.status strong {
+  color: var(--text);
+}
+
+.status.is-success {
+  color: var(--path);
+}
+
+.status.is-error {
+  color: var(--end);
+}
+
+/* ---------- Board ---------- */
+
+.board-wrap {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  padding: 10px;
+  box-shadow: var(--shadow);
+  max-width: 100%;
+}
+
+.board {
+  display: grid;
+  gap: 1px;
+  background: var(--cell-gap);
+  touch-action: none; /* let pointer events handle drag-painting on touch */
+  user-select: none;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.board.is-locked {
+  cursor: progress;
+}
+
+.cell {
+  width: var(--cell);
+  height: var(--cell);
+  background: var(--cell-empty);
+}
+
+.board:not(.is-locked) .cell:hover {
+  filter: brightness(1.35);
+}
+
+.cell.wall {
+  background: var(--wall);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.22);
+}
+
+/* Search waves: bloom in bright, settle into the tint */
+.cell.visited-a {
+  background: var(--wave-a);
+  animation: bloom-a 450ms ease-out;
+}
+
+.cell.visited-b {
+  background: var(--wave-b);
+  animation: bloom-b 450ms ease-out;
+}
+
+@keyframes bloom-a {
+  from {
+    background: var(--wave-a-bright);
+    transform: scale(0.35);
+    border-radius: 50%;
+  }
+  to {
+    background: var(--wave-a);
+    transform: scale(1);
+    border-radius: 0;
+  }
+}
+
+@keyframes bloom-b {
+  from {
+    background: var(--wave-b-bright);
+    transform: scale(0.35);
+    border-radius: 50%;
+  }
+  to {
+    background: var(--wave-b);
+    transform: scale(1);
+    border-radius: 0;
+  }
+}
+
+/* Final shortest path */
+.cell.path {
+  background: var(--path);
+  animation: pop-path 320ms ease-out;
+}
+
+@keyframes pop-path {
+  from {
+    transform: scale(0.3);
+    border-radius: 50%;
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  to {
+    transform: scale(1);
+    border-radius: 0;
+  }
+}
+
+/* Meeting point of the two waves */
+.cell.meet {
+  box-shadow: inset 0 0 0 2px var(--meet);
+}
+
+/* Endpoints — drawn as rounded chips with a letter */
+.cell.start,
+.cell.end {
+  position: relative;
+  z-index: 1;
+}
+
+.cell.start::after,
+.cell.end::after {
+  content: "A";
+  position: absolute;
+  inset: 8%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 28%;
+  font-size: calc(var(--cell) * 0.52);
+  font-weight: 800;
+  color: #08140c;
+  background: var(--start);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35);
+}
+
+.cell.end::after {
+  content: "B";
+  color: #1c0808;
+  background: var(--end);
+}
+
+/* ---------- "This is the path" callout ---------- */
+
+.callout {
+  position: absolute;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.38rem 0.65rem;
+  background: #f4f6fb;
+  color: #12151c;
+  border-radius: 9px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  transform: translate(-50%, calc(-100% - 12px));
+  pointer-events: none;
+  animation: callout-in 260ms ease-out;
+  white-space: nowrap;
+}
+
+.callout::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 7px solid transparent;
+  border-top-color: #f4f6fb;
+}
+
+/* Flipped below the cell when the meeting point is near the top edge */
+.callout.below {
+  transform: translate(-50%, 12px);
+}
+
+.callout.below::after {
+  top: auto;
+  bottom: 100%;
+  border-top-color: transparent;
+  border-bottom-color: #f4f6fb;
+}
+
+.callout-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.callout-sub {
+  font-size: 0.72rem;
+  color: #565e70;
+}
+
+@keyframes callout-in {
+  from {
+    opacity: 0;
+    margin-top: -6px;
+  }
+  to {
+    opacity: 1;
+    margin-top: 0;
+  }
+}
+
+/* ---------- Legend ---------- */
+
+.legend {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem 1.05rem;
+  margin: 0;
+  padding: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Small color chips used in the legend and mode buttons */
+.swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  display: inline-block;
+  flex: none;
+}
+
+.swatch-wall {
+  background: var(--wall);
+}
+
+.swatch-erase {
+  background: var(--cell-empty);
+  box-shadow: inset 0 0 0 1px #3a4356;
+}
+
+.swatch-start {
+  background: var(--start);
+}
+
+.swatch-end {
+  background: var(--end);
+}
+
+.swatch-wave-a {
+  background: linear-gradient(135deg, var(--wave-a-bright), var(--wave-a));
+}
+
+.swatch-wave-b {
+  background: linear-gradient(135deg, var(--wave-b-bright), var(--wave-b));
+}
+
+.swatch-path {
+  background: var(--path);
+}
+
+/* ---------- Footer ---------- */
+
+.site-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  padding: 0.55rem 1rem 1rem;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  letter-spacing: 0.03em;
+}
+
+.footer-text {
+  font-weight: 600;
+}
+
+.footer-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.footer-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  color: var(--text-muted);
+  transition:
+    color 120ms ease,
+    background 120ms ease;
+}
+
+.footer-icon:hover {
+  color: var(--text);
+  background: #1d2430;
+}
+
+.footer-icon:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- Small screens ---------- */
+
+@media (max-width: 640px) {
+  .site-header {
+    padding: 0.9rem 1rem 0.3rem;
+  }
+
+  .app {
+    padding: 0.5rem 0.6rem 0.6rem;
+  }
+
+  .tool-group + .tool-group {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .board-wrap {
+    padding: 6px;
+  }
+}
+
+/* Respect users who prefer no motion: skip the bloom/pop animations */
+@media (prefers-reduced-motion: reduce) {
+  .cell.visited-a,
+  .cell.visited-b,
+  .cell.path,
+  .callout {
+    animation: none;
+  }
+}
