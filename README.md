@@ -1,6 +1,6 @@
 # Maze Pathfinder
 
-**Live demo → https://myasinbee25seecs-coder.github.io/maze-pathfinder/**
+**Live demo → https://yaascine.github.io/maze-path-finder/**
 
 An interactive maze editor and pathfinding visualizer built with plain HTML, CSS, and vanilla JavaScript — no frameworks, no build step. Draw walls, place start (A) and end (B) points, pick an algorithm, and watch it solve the maze live.
 
@@ -37,3 +37,4 @@ New algorithms plug into the `ALGORITHMS` registry at the top of `script.js`.
 Built by **Muhammad Yasin** —
 [LinkedIn](https://www.linkedin.com/in/muhammad-yasin-7a13ba384/) ·
 [GitHub](https://github.com/myasinbee25seecs-coder)
+[Portfolio](https://muhammad-yasin-portfolio.netlify.app/)
